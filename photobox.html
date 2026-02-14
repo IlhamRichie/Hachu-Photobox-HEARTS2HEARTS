@@ -10,13 +10,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-    /* VARIABEL TEMA (Akan berubah via JS) */
+    /* --- CSS VARIABLES --- */
     :root {
-        --theme-color: #ff5c8a; /* Default: Jiwoo Pink */
+        --theme-color: #ff5c8a;
         --theme-bg: #fff0f5;
         --theme-accent: #ff85a2;
     }
 
+    /* --- BASIC SETUP --- */
     body {
         margin: 0; padding: 20px;
         background-color: var(--theme-bg);
@@ -26,7 +27,14 @@
         transition: background-color 0.5s ease;
     }
 
-    /* --- CONTAINER UTAMA --- */
+    /* Background Pattern */
+    body::before {
+        content: ""; position: fixed; inset: 0; z-index: -1;
+        background-image: radial-gradient(var(--theme-accent) 15%, transparent 16%);
+        background-size: 30px 30px; opacity: 0.15;
+    }
+
+    /* --- MAIN CONTAINER --- */
     .app-container {
         max-width: 800px; width: 100%;
         background: rgba(255, 255, 255, 0.95);
@@ -46,7 +54,7 @@
     }
     p.sub { font-weight: bold; color: #888; margin-bottom: 25px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;}
 
-    /* --- GRID PEMILIHAN MEMBER --- */
+    /* --- GRID MEMBER --- */
     .member-grid {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 15px; margin-bottom: 20px;
@@ -55,33 +63,26 @@
     .member-card {
         background: #fff; border-radius: 20px; padding: 15px;
         cursor: pointer; border: 3px solid transparent;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.3s;
         display: flex; flex-direction: column; align-items: center;
         box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     }
-
     .member-card:hover { transform: translateY(-5px); }
-    
     .member-card.active {
-        border-color: var(--theme-color);
-        background: var(--theme-bg);
-        transform: scale(1.05);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        border-color: var(--theme-color); background: var(--theme-bg);
+        transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
-
     .mem-emoji { font-size: 3rem; margin-bottom: 5px; filter: drop-shadow(0 3px 0 rgba(0,0,0,0.1)); }
     .mem-name { font-weight: bold; font-family: 'Fredoka One'; color: #555; }
 
-    /* --- CAMERA SECTION --- */
+    /* --- CAMERA --- */
     .cam-wrapper {
         position: relative; width: 100%; max-width: 500px; margin: 0 auto 20px;
         aspect-ratio: 4/3; border-radius: 25px; overflow: hidden;
         border: 5px solid var(--theme-color); background: #000;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-    
-    /* Video tidak dimirror agar tulisan di baju/kertas terbaca normal */
-    video { width: 100%; height: 100%; object-fit: cover; }
+    video { width: 100%; height: 100%; object-fit: cover; } 
 
     #countdown {
         position: absolute; inset: 0; display: none;
@@ -100,39 +101,36 @@
         transition: 0.2s; box-shadow: 0 6px 0 rgba(0,0,0,0.1);
         text-transform: uppercase;
     }
-    
     .btn-primary { background: var(--theme-color); color: white; }
     .btn-primary:hover { transform: translateY(-3px); filter: brightness(1.1); }
-    
     .btn-secondary { background: #eee; color: #777; }
     .btn-secondary:hover { background: #ddd; }
-    
     .btn-saweria { background: #faae2b; color: #543b1f; display: flex; align-items: center; gap: 8px; }
     .btn-saweria:hover { background: #ffc107; transform: translateY(-3px); }
 
-    /* --- RESULT AREA --- */
-    #result-section { display: none; flex-direction: column; align-items: center; }
+    /* --- RESULT & HELPERS --- */
+    #result-section { display: none; flex-direction: column; align-items: center; width: 100%; }
     
     #final-img {
         max-width: 100%; height: auto; border-radius: 15px;
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         border: 4px solid #fff; margin-bottom: 20px;
+        display: block;
+        min-height: 200px; background: #eee; /* Placeholder bg */
     }
 
     #flash { position: fixed; inset: 0; background: white; z-index: 999; display: none; pointer-events: none; }
-    .hidden { display: none !important; }
-
-    /* Floating Icons Background (CSS Only Decoration) */
-    body::before {
-        content: ""; position: fixed; inset: 0; z-index: -1;
-        background-image: radial-gradient(var(--theme-accent) 15%, transparent 16%);
-        background-size: 30px 30px; opacity: 0.15;
-    }
     
-    /* Footer Credit */
-    .footer-credit {
-        margin-top: 20px; font-size: 12px; color: #888; font-weight: bold;
+    /* Loading Overlay */
+    #loading-overlay {
+        position: absolute; inset: 0; background: rgba(255,255,255,0.8);
+        display: none; justify-content: center; align-items: center;
+        flex-direction: column; z-index: 50; font-family: 'Fredoka One';
+        color: var(--theme-color); font-size: 1.5rem;
     }
+
+    .hidden { display: none !important; }
+    .footer-credit { margin-top: 20px; font-size: 12px; color: #888; font-weight: bold; }
     .footer-credit a { color: var(--theme-color); text-decoration: none; }
 </style>
 </head>
@@ -141,12 +139,15 @@
 <div id="flash"></div>
 
 <div class="app-container">
+    <div id="loading-overlay">
+        <span>✨ Processing...</span>
+    </div>
+
     <h1>H2H <span>Photobox</span></h1>
     <p class="sub" id="subtitle">Select Your Bias to Start</p>
 
     <div id="select-section">
-        <div class="member-grid" id="grid-container">
-            </div>
+        <div class="member-grid" id="grid-container"></div>
         <button class="btn-secondary" onclick="location.href='index.html'" style="margin-top: 10px;">⬅ Back to Game</button>
     </div>
 
@@ -155,23 +156,23 @@
             <video id="video" autoplay playsinline></video>
             <div id="countdown">3</div>
         </div>
-        <div class="btn-group">
+        <div class="btn-group" id="camera-btns">
             <button class="btn-secondary" onclick="resetApp()">Change Bias</button>
             <button class="btn-primary" onclick="startPhotoSession()">Take Photos 📸</button>
         </div>
     </div>
 
     <div id="result-section">
-        <img id="final-img" src="">
+        <img id="final-img" alt="Result will appear here">
         
-        <div class="btn-group">
+        <div class="btn-group" id="result-btns">
             <button class="btn-secondary" onclick="location.reload()">Retake</button>
             <button class="btn-primary" onclick="printImage()" style="background-color: #333;">🖨️ Print</button>
             <button class="btn-primary" onclick="downloadImage()">Download ⬇</button>
         </div>
 
         <div style="margin-top: 15px;">
-            <a href="https://saweria.co/rigannnnn" target="_blank" style="text-decoration:none;">
+            <a href="https://saweria.co/eloooyhm" target="_blank" style="text-decoration:none;">
                 <button class="btn-saweria">🍕 Traktir Jajan</button>
             </a>
         </div>
@@ -185,14 +186,14 @@
 <canvas id="render-canvas" style="display: none;"></canvas>
 
 <script>
-    /* --- DATA MEMBER CONFIG --- */
+    // --- KONFIGURASI MEMBER ---
     const members = [
         { id: 'jiwoo', name: 'Jiwoo', emoji: '🍓', color: '#ff5c8a', bg: '#fff0f5' },
         { id: 'carmen', name: 'Carmen', emoji: '🌴', color: '#4caf50', bg: '#e8f5e9' },
         { id: 'yuha', name: 'Yuha', emoji: '🎀', color: '#ff9ebb', bg: '#fff0f6' },
         { id: 'stella', name: 'Stella', emoji: '🧁', color: '#00d2ff', bg: '#e0f7fa' },
         { id: 'juun', name: 'Juun', emoji: '👾', color: '#9c27b0', bg: '#f3e5f5' },
-        { id: 'ian', name: 'Ian', emoji: '🫛', color: '#8bc34a', bg: '#f1f8e9' },
+        { id: 'ian', name: 'Ian', emoji: '🍫', color: '#8bc34a', bg: '#f1f8e9' },
         { id: 'ana', name: 'A-Na', emoji: '🌻', color: '#ffc107', bg: '#fffde7' },
         { id: 'yeon', name: 'Ye-on', emoji: '😊', color: '#ff9800', bg: '#fff3e0' }
     ];
@@ -201,19 +202,33 @@
     let photos = [];
     const MAX_PHOTOS = 3; 
 
-    /* --- ASSETS --- */
+    // --- ASSETS PATH ---
     const assets = {
         logo: 'assets/logo panjang.png',
         icon: 'assets/fav.png',
         sfxShutter: 'assets/slice.mp3',
         sfxCount: 'assets/game-start.mp3'
     };
+
     const sfxShutter = new Audio(assets.sfxShutter);
     const sfxCount = new Audio(assets.sfxCount);
-    const logoImg = new Image(); logoImg.src = assets.logo;
-    const iconImg = new Image(); iconImg.src = assets.icon;
+    
+    // --- HELPER UNTUK LOAD GAMBAR ---
+    // Ini penting supaya tidak error NaN saat render
+    function loadImage(src) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous"; // Penting untuk menghindari Tainted Canvas
+            img.onload = () => resolve(img);
+            img.onerror = () => {
+                console.warn("Gagal load image:", src);
+                resolve(null); // Return null kalau gagal, jangan error
+            };
+            img.src = src;
+        });
+    }
 
-    /* --- INIT & MEMBER SELECTION --- */
+    // --- INIT ---
     function init() {
         const grid = document.getElementById('grid-container');
         members.forEach(m => {
@@ -224,26 +239,31 @@
             grid.appendChild(card);
         });
 
-        // Start Camera
+        startCamera();
+    }
+
+    function startCamera() {
         navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
             .then(stream => document.getElementById('video').srcObject = stream)
-            .catch(e => console.error("Camera access denied:", e));
+            .catch(e => {
+                alert("Camera error: " + e.message);
+                console.error("Camera denied:", e);
+            });
     }
 
     function selectMember(m, el) {
         currentMember = m;
-        // Update UI Visuals
         document.querySelectorAll('.member-card').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         
+        // Update CSS Variable
         const root = document.documentElement.style;
         root.setProperty('--theme-color', m.color);
         root.setProperty('--theme-bg', m.bg);
         root.setProperty('--theme-accent', m.color + '44'); 
-        
+
         $('#subtitle').text(`Theme: ${m.name} ${m.emoji}`);
         
-        // Transition to Camera
         setTimeout(() => {
             $('#select-section').slideUp();
             $('#camera-section').removeClass('hidden').hide().slideDown();
@@ -255,17 +275,25 @@
         $('#select-section').slideDown();
     }
 
-    /* --- CAPTURE LOGIC --- */
+    // --- FOTO LOGIC ---
     async function startPhotoSession() {
-        $('.btn-group').fadeOut();
+        $('#camera-btns').fadeOut(); 
         photos = [];
+        
         for (let i = 1; i <= MAX_PHOTOS; i++) {
             await runCountdown(3);
             captureFrame();
+            
+            // Efek Flash
             $('#flash').show().fadeOut(300);
-            await new Promise(r => setTimeout(r, 800)); // Delay antar foto
+            await new Promise(r => setTimeout(r, 800));
         }
-        renderStrip();
+
+        // Tampilkan loading sebelum render
+        $('#loading-overlay').css('display', 'flex');
+        
+        // Beri waktu sebentar biar DOM siap
+        setTimeout(renderStrip, 500);
     }
 
     function runCountdown(num) {
@@ -275,25 +303,32 @@
             let t = setInterval(() => {
                 sfxCount.play();
                 c--;
-                if(c>0) $('#countdown').text(c);
+                if(c > 0) $('#countdown').text(c);
                 else { clearInterval(t); $('#countdown').hide(); resolve(); }
             }, 1000);
         });
     }
 
     function captureFrame() {
-        sfxShutter.play();
+        try {
+            sfxShutter.play();
+        } catch(e) { console.log("Audio play failed"); }
+
         const vid = document.getElementById('video');
         const c = document.createElement('canvas');
-        c.width = vid.videoWidth; c.height = vid.videoHeight;
+        c.width = vid.videoWidth; 
+        c.height = vid.videoHeight;
         const ctx = c.getContext('2d');
-        // Gambar apa adanya (tidak dimirror lagi secara software)
+        
+        // Flip horizontal kalau mau seperti cermin (opsional, saat ini default kamera)
+        // ctx.translate(c.width, 0); ctx.scale(-1, 1);
+        
         ctx.drawImage(vid, 0, 0); 
         photos.push(c.toDataURL('image/png'));
     }
 
-    /* --- RENDERING STRIP --- */
-    function renderStrip() {
+    // --- RENDER LOGIC (CORE IMPROVEMENT) ---
+    async function renderStrip() {
         $('#camera-section').hide();
         $('#result-section').css('display', 'flex');
 
@@ -301,24 +336,35 @@
         const ctx = canvas.getContext('2d');
         const m = currentMember;
 
-        // Config Dimensions
-        const photoW = 400; const photoH = 300;
-        const pad = 40; const gap = 30; const footerH = 180;
+        // Load Asset Dulu (Await)
+        const [logoImg, iconImg] = await Promise.all([
+            loadImage(assets.logo),
+            loadImage(assets.icon)
+        ]);
+
+        // Dimensi Strip
+        const photoW = 400; 
+        const photoH = 300;
+        const pad = 40; 
+        const gap = 30; 
+        const footerH = 180;
+        
         const stripW = photoW + (pad * 2);
         const stripH = pad + (MAX_PHOTOS * photoH) + ((MAX_PHOTOS - 1) * gap) + footerH + pad;
-        const totalW = (stripW * 2) + 20; 
+        const totalW = (stripW * 2) + 20; // 2 Strip
         const totalH = stripH;
         
-        canvas.width = totalW; canvas.height = totalH;
+        canvas.width = totalW; 
+        canvas.height = totalH;
 
-        // 1. Background Gradient
+        // 1. Background
         const grad = ctx.createLinearGradient(0, 0, 0, totalH);
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(1, m.bg);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, totalW, totalH);
 
-        // 2. Pattern Generator (Emoji + Logo)
+        // 2. Pattern (Hanya jika icon berhasil diload)
         function drawPattern(offsetX) {
             for(let i=0; i<45; i++) {
                 const x = offsetX + Math.random() * stripW;
@@ -326,112 +372,151 @@
                 const size = Math.random() * 40 + 20;
                 const rot = (Math.random()-0.5) * 2;
                 
-                ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = 0.12; 
+                ctx.save(); 
+                ctx.translate(x, y); 
+                ctx.rotate(rot); 
+                ctx.globalAlpha = 0.12; 
                 
-                // Randomly pick Member Emoji OR H2H Icon
-                if(Math.random() > 0.5) ctx.drawImage(iconImg, -size/2, -size/2, size, size);
-                else {
-                    ctx.font = `${size}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                // Gunakan emoji jika icon gambar gagal load
+                if(iconImg && Math.random() > 0.5) {
+                    ctx.drawImage(iconImg, -size/2, -size/2, size, size);
+                } else {
+                    ctx.font = `${size}px Arial`; 
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(m.emoji, 0, 0);
                 }
                 ctx.restore();
             }
         }
-        drawPattern(0); drawPattern(stripW + 20);
+        drawPattern(0); 
+        drawPattern(stripW + 20);
 
-        // 3. Middle Line
-        ctx.beginPath(); ctx.setLineDash([15, 15]);
-        ctx.moveTo(totalW/2, 0); ctx.lineTo(totalW/2, totalH);
-        ctx.strokeStyle = "#ccc"; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+        // 3. Garis Potong Tengah
+        ctx.beginPath(); 
+        ctx.setLineDash([15, 15]);
+        ctx.moveTo(totalW/2, 0); 
+        ctx.lineTo(totalW/2, totalH);
+        ctx.strokeStyle = "#ccc"; 
+        ctx.lineWidth = 2; 
+        ctx.stroke(); 
+        ctx.setLineDash([]);
 
-        // 4. Render Photos & Deco
-        let loaded = 0;
-        photos.forEach((src, idx) => {
-            const img = new Image(); img.src = src;
-            img.onload = () => {
-                const y = pad + (idx * (photoH + gap));
+        // 4. Draw Photos
+        const loadedPhotos = await Promise.all(photos.map(src => loadImage(src)));
+
+        loadedPhotos.forEach((img, idx) => {
+            if(!img) return;
+            const y = pad + (idx * (photoH + gap));
+            
+            const drawSinglePhoto = (offX) => {
+                // Shadow
+                ctx.fillStyle = "rgba(0,0,0,0.1)"; 
+                ctx.fillRect(offX+pad+8, y+8, photoW, photoH);
+                // Frame Putih
+                ctx.fillStyle = "#fff"; 
+                ctx.fillRect(offX+pad-10, y-10, photoW+20, photoH+20);
+                // Foto
+                ctx.drawImage(img, offX+pad, y, photoW, photoH);
                 
-                const drawPhoto = (offX) => {
-                    // Shadow
-                    ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(offX+pad+8, y+8, photoW, photoH);
-                    // Frame
-                    ctx.fillStyle = "#fff"; ctx.fillRect(offX+pad-10, y-10, photoW+20, photoH+20);
-                    // Image
-                    ctx.drawImage(img, offX+pad, y, photoW, photoH);
+                // Dekorasi Emoji Random di Sudut
+                if(Math.random() > 0.3) {
+                    const corner = Math.floor(Math.random()*4);
+                    const sSize = 50;
+                    let sx, sy;
+                    // Logic posisi emoji
+                    if(corner===0) { sx = offX+pad-15; sy = y-15; }
+                    if(corner===1) { sx = offX+pad+photoW-35; sy = y-15; }
+                    if(corner===2) { sx = offX+pad-15; sy = y+photoH-35; }
+                    if(corner===3) { sx = offX+pad+photoW-35; sy = y+photoH-35; }
                     
-                    // Random Corner Emoji
-                    if(Math.random() > 0.3) {
-                        const corner = Math.floor(Math.random()*4);
-                        const sSize = 50;
-                        let sx, sy;
-                        if(corner===0) { sx = offX+pad-15; sy = y-15; }
-                        if(corner===1) { sx = offX+pad+photoW-35; sy = y-15; }
-                        if(corner===2) { sx = offX+pad-15; sy = y+photoH-35; }
-                        if(corner===3) { sx = offX+pad+photoW-35; sy = y+photoH-35; }
-                        
-                        ctx.font = `${sSize}px Arial`; ctx.shadowColor="rgba(0,0,0,0.2)"; ctx.shadowBlur=5;
-                        ctx.fillText(m.emoji, sx, sy+sSize/2); ctx.shadowBlur=0;
-                    }
-                };
-                drawPhoto(0); drawPhoto(stripW + 20);
-                
-                loaded++;
-                if(loaded === MAX_PHOTOS) finalizeCanvas(stripW, stripH, footerH, m);
+                    ctx.font = `${sSize}px Arial`; 
+                    ctx.shadowColor="rgba(0,0,0,0.2)"; ctx.shadowBlur=5;
+                    ctx.fillText(m.emoji, sx, sy+sSize/2); 
+                    ctx.shadowBlur=0;
+                }
             };
+            drawSinglePhoto(0); 
+            drawSinglePhoto(stripW + 20);
         });
-    }
 
-    function finalizeCanvas(stripW, stripH, footerH, m) {
-        const ctx = document.getElementById('render-canvas').getContext('2d');
-        const logoW = 200;
-        const logoH = logoW * (logoImg.height / logoImg.width);
+        // 5. Footer & Logo
         const yBase = stripH - footerH;
+        
+        // Safety check untuk dimensi logo
+        let logoW = 200;
+        let logoH = 60; // Default height jika logo gagal load
+        if (logoImg && logoImg.width > 0) {
+            logoH = logoW * (logoImg.height / logoImg.width);
+        }
 
         const drawFooter = (offX) => {
-            // Signature
-            ctx.font = "bold 24px 'Fredoka One', sans-serif"; ctx.fillStyle = m.color;
-            ctx.textAlign = "center"; ctx.fillText(`With ${m.name} ${m.emoji}`, offX + stripW/2, yBase + 50);
+            ctx.font = "bold 24px 'Fredoka One', sans-serif"; 
+            ctx.fillStyle = m.color;
+            ctx.textAlign = "center"; 
+            ctx.fillText(`With ${m.name} ${m.emoji}`, offX + stripW/2, yBase + 50);
             
-            // Logo
-            ctx.drawImage(logoImg, offX + (stripW - logoW)/2, yBase + 70, logoW, logoH);
-            
-            // Date
-            const date = new Date().toLocaleDateString();
-            ctx.font = "14px Quicksand"; ctx.fillStyle = "#888";
-            ctx.fillText(date, offX + stripW/2, yBase + 70 + logoH + 20);
+            if (logoImg) {
+                ctx.drawImage(logoImg, offX + (stripW - logoW)/2, yBase + 70, logoW, logoH);
+            } else {
+                // Fallback text jika logo tidak ada
+                ctx.font = "bold 20px Quicksand";
+                ctx.fillText("H2H PHOTOBOX", offX + stripW/2, yBase + 100);
+            }
+
+            const date = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            ctx.font = "14px Quicksand"; 
+            ctx.fillStyle = "#888";
+            // Sesuaikan posisi tanggal tergantung logo ada atau tidak
+            const dateY = logoImg ? (yBase + 70 + logoH + 25) : (yBase + 130);
+            ctx.fillText(date, offX + stripW/2, dateY);
         };
 
-        drawFooter(0); drawFooter(stripW + 20);
-        $('#final-img').attr('src', document.getElementById('render-canvas').toDataURL());
+        drawFooter(0); 
+        drawFooter(stripW + 20);
+
+        // 6. Set Hasil ke IMG tag
+        try {
+            const finalDataURL = canvas.toDataURL('image/png');
+            $('#final-img').attr('src', finalDataURL);
+        } catch (e) {
+            console.error("Canvas Security Error:", e);
+            alert("Gagal membuat gambar (Tainted Canvas). Pastikan asset gambar berasal dari domain yang sama atau gunakan local server.");
+        }
+
+        // Selesai
+        $('#loading-overlay').hide();
     }
 
-    /* --- ACTIONS --- */
+    // --- ACTION BUTTONS ---
     function downloadImage() {
-        const a = document.createElement('a');
-        a.download = `H2H-${currentMember.name}-${Date.now()}.png`;
-        a.href = document.getElementById('render-canvas').toDataURL();
-        a.click();
+        const link = document.createElement('a');
+        link.download = `H2H-${currentMember ? currentMember.name : 'Photo'}-${Date.now()}.png`;
+        link.href = document.getElementById('render-canvas').toDataURL();
+        document.body.appendChild(link); // Penting untuk Firefox/Mobile
+        link.click();
+        document.body.removeChild(link);
     }
 
     function printImage() {
         const imgData = document.getElementById('render-canvas').toDataURL();
         const win = window.open('');
-        win.document.write(`
+        const html = `
             <html>
-                <head><title>Print Photo - H2H</title></head>
-                <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#eee;">
-                    <img src="${imgData}" style="max-height:95vh; max-width:95%; box-shadow:0 0 20px rgba(0,0,0,0.1);">
+                <head><title>Print Photo</title></head>
+                <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh;">
+                    <img src="${imgData}" style="max-height:100%; max-width:100%;">
                     <script>
                         window.onload = function() { 
-                            setTimeout(function(){ window.print(); window.close(); }, 500);
-                        }
+                            setTimeout(function(){ window.print(); window.close(); }, 500); 
+                        };
                     <\/script>
                 </body>
-            </html>
-        `);
+            </html>`;
+        win.document.write(html);
+        win.document.close();
     }
 
-    // Start App
+    // Jalankan
     init();
 </script>
 </body>

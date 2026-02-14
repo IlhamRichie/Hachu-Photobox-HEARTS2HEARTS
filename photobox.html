@@ -3,234 +3,275 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>H2H: Kiyowo Photobox</title>
+<title>H2H: Bias Photobox</title>
 <link rel="icon" type="image/png" href="assets/fav.png">
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-    /* Default Var */
-    :root { --main: #FFB7B2; --bg: #FFF0F5; }
-    
-    body { 
-        margin: 0; padding: 20px; background: var(--bg); 
-        font-family: 'Quicksand', sans-serif; color: #555;
+    /* VARIABEL TEMA (Akan berubah via JS) */
+    :root {
+        --theme-color: #ff5c8a; /* Default: Jiwoo Pink */
+        --theme-bg: #fff0f5;
+        --theme-accent: #ff85a2;
+    }
+
+    body {
+        margin: 0; padding: 20px;
+        background-color: var(--theme-bg);
+        font-family: 'Quicksand', sans-serif;
+        color: #444;
         display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-        transition: background 0.5s;
+        transition: background-color 0.5s ease;
     }
 
-    /* --- UI Container --- */
-    .container {
-        max-width: 700px; width: 100%; text-align: center;
-        background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 40px;
-        border: 4px solid var(--main);
-        box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
-        transition: border 0.5s;
+    /* --- CONTAINER UTAMA --- */
+    .app-container {
+        max-width: 800px; width: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        border: 5px solid var(--theme-color);
+        border-radius: 40px;
+        padding: 30px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        transition: border-color 0.5s ease;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
     }
 
-    h1 { font-family: 'Fredoka One'; color: var(--main); font-size: 2.5rem; margin: 0 0 10px 0; }
-    p.subtitle { margin-bottom: 25px; color: #777; font-weight: bold; }
+    h1 {
+        font-family: 'Fredoka One'; font-size: clamp(2rem, 5vw, 3rem); 
+        color: var(--theme-color); margin: 0 0 5px 0; letter-spacing: 1px;
+    }
+    p.sub { font-weight: bold; color: #888; margin-bottom: 25px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;}
 
-    /* --- Style Selector --- */
-    .style-grid { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
-    
-    .style-card {
-        width: 140px; padding: 15px; border-radius: 20px;
+    /* --- GRID PEMILIHAN MEMBER --- */
+    .member-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px; margin-bottom: 20px;
+    }
+
+    .member-card {
+        background: #fff; border-radius: 20px; padding: 15px;
         cursor: pointer; border: 3px solid transparent;
-        background: #f9f9f9; transition: 0.3s;
-        display: flex; flex-direction: column; align-items: center; gap: 10px;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; flex-direction: column; align-items: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     }
-    .style-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .style-card.selected { border-color: var(--main); background: #fff; box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
 
-    .color-preview { width: 50px; height: 50px; border-radius: 50%; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
-    .style-name { font-weight: bold; font-size: 0.9rem; font-family: 'Fredoka One'; color: #555; }
+    .member-card:hover { transform: translateY(-5px); }
+    
+    .member-card.active {
+        border-color: var(--theme-color);
+        background: var(--theme-bg);
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
 
-    /* --- Camera Preview --- */
-    .cam-frame {
-        position: relative; width: 100%; aspect-ratio: 4/3; 
-        border-radius: 20px; overflow: hidden; background: #000;
-        border: 4px solid #eee; margin-bottom: 20px;
+    .mem-emoji { font-size: 3rem; margin-bottom: 5px; filter: drop-shadow(0 3px 0 rgba(0,0,0,0.1)); }
+    .mem-name { font-weight: bold; font-family: 'Fredoka One'; color: #555; }
+
+    /* --- CAMERA SECTION --- */
+    .cam-wrapper {
+        position: relative; width: 100%; max-width: 500px; margin: 0 auto 20px;
+        aspect-ratio: 4/3; border-radius: 25px; overflow: hidden;
+        border: 5px solid var(--theme-color); background: #000;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     
+    /* Video tidak dimirror agar tulisan di baju/kertas terbaca normal */
     video { width: 100%; height: 100%; object-fit: cover; }
-    
+
     #countdown {
         position: absolute; inset: 0; display: none;
         justify-content: center; align-items: center;
-        font-family: 'Fredoka One'; font-size: 8rem; color: white;
-        text-shadow: 4px 4px 0 var(--main);
-        background: rgba(0,0,0,0.2);
+        font-family: 'Fredoka One'; font-size: 8rem; color: #fff;
+        text-shadow: 4px 4px 0 var(--theme-color);
+        background: rgba(0,0,0,0.3); backdrop-filter: blur(2px);
+    }
+
+    /* --- BUTTONS --- */
+    .btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+    
+    button {
+        padding: 12px 25px; border-radius: 50px; border: none;
+        font-family: 'Fredoka One'; font-size: 1.1rem; cursor: pointer;
+        transition: 0.2s; box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+        text-transform: uppercase;
+    }
+    
+    .btn-primary { background: var(--theme-color); color: white; }
+    .btn-primary:hover { transform: translateY(-3px); filter: brightness(1.1); }
+    
+    .btn-secondary { background: #eee; color: #777; }
+    .btn-secondary:hover { background: #ddd; }
+    
+    .btn-saweria { background: #faae2b; color: #543b1f; display: flex; align-items: center; gap: 8px; }
+    .btn-saweria:hover { background: #ffc107; transform: translateY(-3px); }
+
+    /* --- RESULT AREA --- */
+    #result-section { display: none; flex-direction: column; align-items: center; }
+    
+    #final-img {
+        max-width: 100%; height: auto; border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        border: 4px solid #fff; margin-bottom: 20px;
     }
 
     #flash { position: fixed; inset: 0; background: white; z-index: 999; display: none; pointer-events: none; }
+    .hidden { display: none !important; }
 
-    /* --- Controls --- */
-    .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    button {
-        padding: 15px 30px; border-radius: 50px; border: none;
-        font-family: 'Fredoka One'; font-size: 1.2rem; cursor: pointer;
-        transition: 0.2s; box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+    /* Floating Icons Background (CSS Only Decoration) */
+    body::before {
+        content: ""; position: fixed; inset: 0; z-index: -1;
+        background-image: radial-gradient(var(--theme-accent) 15%, transparent 16%);
+        background-size: 30px 30px; opacity: 0.15;
     }
-    .btn-main { background: var(--main); color: white; }
-    .btn-main:hover { transform: translateY(-3px); filter: brightness(1.1); }
-    .btn-sec { background: #eee; color: #777; }
-
-    /* --- Result Area --- */
-    #result-area { display: none; flex-direction: column; align-items: center; }
-    #final-image { 
-        max-width: 100%; border-radius: 10px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        border: 2px dashed var(--main); margin-bottom: 20px;
+    
+    /* Footer Credit */
+    .footer-credit {
+        margin-top: 20px; font-size: 12px; color: #888; font-weight: bold;
     }
-
-    /* Sections Visibility */
-    #camera-section, #result-area { display: none; }
-    #style-section { display: block; }
+    .footer-credit a { color: var(--theme-color); text-decoration: none; }
 </style>
 </head>
 <body>
 
 <div id="flash"></div>
 
-<div class="container">
-    <h1>H2H <span>Photobox</span> 📸</h1>
-    
-    <div id="style-section">
-        <p class="subtitle">✨ CHOOSE YOUR VIBE ✨</p>
-        <div class="style-grid">
-            <div class="style-card" onclick="selectStyle('pastel')">
-                <div class="color-preview" style="background: linear-gradient(135deg, #fff1eb, #ace0f9);"></div>
-                <div class="style-name">Pastel Crush 🌸</div>
+<div class="app-container">
+    <h1>H2H <span>Photobox</span></h1>
+    <p class="sub" id="subtitle">Select Your Bias to Start</p>
+
+    <div id="select-section">
+        <div class="member-grid" id="grid-container">
             </div>
-            <div class="style-card" onclick="selectStyle('fresh')">
-                <div class="color-preview" style="background: linear-gradient(135deg, #fdfbfb, #d4fc79);"></div>
-                <div class="style-name">Fresh Lemon 🍋</div>
-            </div>
-            <div class="style-card" onclick="selectStyle('dream')">
-                <div class="color-preview" style="background: linear-gradient(135deg, #e0c3fc, #8ec5fc);"></div>
-                <div class="style-name">Purple Dream 💜</div>
-            </div>
-        </div>
-        <button class="btn-sec" onclick="location.href='index.html'">⬅ HOME</button>
+        <button class="btn-secondary" onclick="location.href='index.html'" style="margin-top: 10px;">⬅ Back to Game</button>
     </div>
 
-    <div id="camera-section">
-        <div class="cam-frame">
+    <div id="camera-section" class="hidden">
+        <div class="cam-wrapper">
             <video id="video" autoplay playsinline></video>
             <div id="countdown">3</div>
         </div>
-        <div class="controls">
-            <button class="btn-sec" onclick="resetToStyle()">⬅ BACK</button>
-            <button class="btn-main" onclick="startPhotoSession()">START ✨</button>
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="resetApp()">Change Bias</button>
+            <button class="btn-primary" onclick="startPhotoSession()">Take Photos 📸</button>
         </div>
     </div>
 
-    <div id="result-area">
-        <p class="subtitle">✨ SO KIYOWO! ✨</p>
-        <img id="final-image" src="" alt="Result">
-        <div class="controls">
-            <button class="btn-sec" onclick="location.reload()">RETAKE 🔄</button>
-            <button class="btn-main" onclick="downloadImage()">DOWNLOAD ⬇</button>
+    <div id="result-section">
+        <img id="final-img" src="">
+        
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="location.reload()">Retake</button>
+            <button class="btn-primary" onclick="printImage()" style="background-color: #333;">🖨️ Print</button>
+            <button class="btn-primary" onclick="downloadImage()">Download ⬇</button>
         </div>
+
+        <div style="margin-top: 15px;">
+            <a href="https://saweria.co/rigannnnn" target="_blank" style="text-decoration:none;">
+                <button class="btn-saweria">🍕 Traktir Jajan</button>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer-credit">
+        Made with 💖 by <a href="https://instagram.com/eloooyhm" target="_blank">@eloooyhm</a>
     </div>
 </div>
 
-<canvas id="strip-canvas" style="display:none;"></canvas>
+<canvas id="render-canvas" style="display: none;"></canvas>
 
 <script>
-    // --- CONFIG & ASSETS ---
+    /* --- DATA MEMBER CONFIG --- */
+    const members = [
+        { id: 'jiwoo', name: 'Jiwoo', emoji: '🍓', color: '#ff5c8a', bg: '#fff0f5' },
+        { id: 'carmen', name: 'Carmen', emoji: '🌴', color: '#4caf50', bg: '#e8f5e9' },
+        { id: 'yuha', name: 'Yuha', emoji: '🎀', color: '#ff9ebb', bg: '#fff0f6' },
+        { id: 'stella', name: 'Stella', emoji: '🧁', color: '#00d2ff', bg: '#e0f7fa' },
+        { id: 'juun', name: 'Juun', emoji: '👾', color: '#9c27b0', bg: '#f3e5f5' },
+        { id: 'ian', name: 'Ian', emoji: '🫛', color: '#8bc34a', bg: '#f1f8e9' },
+        { id: 'ana', name: 'A-Na', emoji: '🌻', color: '#ffc107', bg: '#fffde7' },
+        { id: 'yeon', name: 'Ye-on', emoji: '😊', color: '#ff9800', bg: '#fff3e0' }
+    ];
+
+    let currentMember = null;
+    let photos = [];
+    const MAX_PHOTOS = 3; 
+
+    /* --- ASSETS --- */
     const assets = {
-        sticker: 'assets/fav.png',
-        logo: 'assets/logo panjang.png', // Pake logo panjang di footer biar rapi
+        logo: 'assets/logo panjang.png',
+        icon: 'assets/fav.png',
         sfxShutter: 'assets/slice.mp3',
         sfxCount: 'assets/game-start.mp3'
     };
-
-    // --- STYLE CONFIGURATIONS ---
-    const styles = {
-        'pastel': {
-            name: 'Pastel Crush',
-            grad: ['#fff1eb', '#ace0f9'], // Pink to Blue
-            mainColor: '#FFB7B2',
-            frameColor: '#ffffff'
-        },
-        'fresh': {
-            name: 'Fresh Lemon',
-            grad: ['#fdfbfb', '#d4fc79'], // White to Lime
-            mainColor: '#96e6a1',
-            frameColor: '#fffee0'
-        },
-        'dream': {
-            name: 'Purple Dream',
-            grad: ['#fccb90', '#d57eeb'], // Peach to Purple
-            mainColor: '#d57eeb',
-            frameColor: '#f3e5f5'
-        }
-    };
-
-    let currentStyle = 'pastel'; // Default
-    let photos = [];
-    const MAX_PHOTOS = 3;
-
-    // --- DOM ELEMENTS ---
-    const video = document.getElementById('video');
-    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-    const stripCanvas = document.getElementById('strip-canvas'); const stripCtx = stripCanvas.getContext('2d');
     const sfxShutter = new Audio(assets.sfxShutter);
     const sfxCount = new Audio(assets.sfxCount);
-    
-    // Images
-    const stickerImg = new Image(); stickerImg.src = assets.sticker;
     const logoImg = new Image(); logoImg.src = assets.logo;
+    const iconImg = new Image(); iconImg.src = assets.icon;
 
-    // --- INIT CAMERA ---
-    navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
-        .then(stream => { video.srcObject = stream; })
-        .catch(e => console.log("Cam error", e));
+    /* --- INIT & MEMBER SELECTION --- */
+    function init() {
+        const grid = document.getElementById('grid-container');
+        members.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'member-card';
+            card.innerHTML = `<div class="mem-emoji">${m.emoji}</div><div class="mem-name">${m.name}</div>`;
+            card.onclick = () => selectMember(m, card);
+            grid.appendChild(card);
+        });
 
-    // --- FUNCTIONS ---
-
-    function selectStyle(key) {
-        currentStyle = key;
-        const s = styles[key];
-        
-        // Update UI Colors
-        document.documentElement.style.setProperty('--main', s.mainColor);
-        $('body').css('background', `linear-gradient(135deg, ${s.grad[0]}, ${s.grad[1]})`);
-        
-        // Highlight selection
-        $('.style-card').removeClass('selected');
-        // Simple visual feedback (opsional bisa tambah class specific)
-        
-        // Switch Screen
-        $('#style-section').hide();
-        $('#camera-section').fadeIn();
+        // Start Camera
+        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
+            .then(stream => document.getElementById('video').srcObject = stream)
+            .catch(e => console.error("Camera access denied:", e));
     }
 
-    function resetToStyle() {
-        $('#camera-section').hide();
-        $('#style-section').fadeIn();
+    function selectMember(m, el) {
+        currentMember = m;
+        // Update UI Visuals
+        document.querySelectorAll('.member-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        
+        const root = document.documentElement.style;
+        root.setProperty('--theme-color', m.color);
+        root.setProperty('--theme-bg', m.bg);
+        root.setProperty('--theme-accent', m.color + '44'); 
+        
+        $('#subtitle').text(`Theme: ${m.name} ${m.emoji}`);
+        
+        // Transition to Camera
+        setTimeout(() => {
+            $('#select-section').slideUp();
+            $('#camera-section').removeClass('hidden').hide().slideDown();
+        }, 300);
     }
 
+    function resetApp() {
+        $('#camera-section').slideUp();
+        $('#select-section').slideDown();
+    }
+
+    /* --- CAPTURE LOGIC --- */
     async function startPhotoSession() {
-        $('.controls').hide(); // Hide buttons
+        $('.btn-group').fadeOut();
         photos = [];
-        
         for (let i = 1; i <= MAX_PHOTOS; i++) {
-            await doCountdown(3);
-            takeSnapshot();
+            await runCountdown(3);
+            captureFrame();
             $('#flash').show().fadeOut(300);
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 800)); // Delay antar foto
         }
-
-        renderResult();
+        renderStrip();
     }
 
-    function doCountdown(num) {
+    function runCountdown(num) {
         return new Promise(resolve => {
             let c = num;
-            $('#countdown').css('display','flex').text(c);
+            $('#countdown').css('display', 'flex').text(c);
             let t = setInterval(() => {
                 sfxCount.play();
                 c--;
@@ -240,67 +281,70 @@
         });
     }
 
-    function takeSnapshot() {
+    function captureFrame() {
         sfxShutter.play();
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        photos.push(canvas.toDataURL('image/png'));
+        const vid = document.getElementById('video');
+        const c = document.createElement('canvas');
+        c.width = vid.videoWidth; c.height = vid.videoHeight;
+        const ctx = c.getContext('2d');
+        // Gambar apa adanya (tidak dimirror lagi secara software)
+        ctx.drawImage(vid, 0, 0); 
+        photos.push(c.toDataURL('image/png'));
     }
 
-    // --- RENDERING LOGIC (THE MAGIC) ---
-    function renderResult() {
+    /* --- RENDERING STRIP --- */
+    function renderStrip() {
         $('#camera-section').hide();
-        $('#result-area').css('display','flex');
+        $('#result-section').css('display', 'flex');
 
-        const s = styles[currentStyle];
-        
-        // Config Ukuran
-        const photoW = 400, photoH = 300; 
-        const gap = 25, pad = 40, footerH = 140;
-        const stripW = photoW + (pad*2);
-        const stripH = pad + (MAX_PHOTOS * photoH) + ((MAX_PHOTOS-1)*gap) + footerH + pad;
-        
-        // Double Strip
+        const canvas = document.getElementById('render-canvas');
+        const ctx = canvas.getContext('2d');
+        const m = currentMember;
+
+        // Config Dimensions
+        const photoW = 400; const photoH = 300;
+        const pad = 40; const gap = 30; const footerH = 180;
+        const stripW = photoW + (pad * 2);
+        const stripH = pad + (MAX_PHOTOS * photoH) + ((MAX_PHOTOS - 1) * gap) + footerH + pad;
         const totalW = (stripW * 2) + 20; 
         const totalH = stripH;
-
-        stripCanvas.width = totalW; stripCanvas.height = totalH;
+        
+        canvas.width = totalW; canvas.height = totalH;
 
         // 1. Background Gradient
-        const grad = stripCtx.createLinearGradient(0, 0, 0, totalH);
-        grad.addColorStop(0, s.grad[0]);
-        grad.addColorStop(1, s.grad[1]);
-        stripCtx.fillStyle = grad;
-        stripCtx.fillRect(0, 0, totalW, totalH);
+        const grad = ctx.createLinearGradient(0, 0, 0, totalH);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(1, m.bg);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, totalW, totalH);
 
-        // 2. Random Sticker Overload (Background Layer)
-        // Kita bikin BANYAK stiker (30 biji) tersebar
+        // 2. Pattern Generator (Emoji + Logo)
         function drawPattern(offsetX) {
-            for(let i=0; i<30; i++) {
-                const size = Math.random() * 50 + 20;
+            for(let i=0; i<45; i++) {
                 const x = offsetX + Math.random() * stripW;
                 const y = Math.random() * stripH;
-                const rot = (Math.random()-0.5) * 2; // Rotasi acak
-
-                stripCtx.save();
-                stripCtx.translate(x, y);
-                stripCtx.rotate(rot);
-                stripCtx.globalAlpha = 0.4; // Transparan buat background
-                stripCtx.drawImage(stickerImg, -size/2, -size/2, size, size);
-                stripCtx.restore();
+                const size = Math.random() * 40 + 20;
+                const rot = (Math.random()-0.5) * 2;
+                
+                ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = 0.12; 
+                
+                // Randomly pick Member Emoji OR H2H Icon
+                if(Math.random() > 0.5) ctx.drawImage(iconImg, -size/2, -size/2, size, size);
+                else {
+                    ctx.font = `${size}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(m.emoji, 0, 0);
+                }
+                ctx.restore();
             }
         }
-        drawPattern(0); // Kiri
-        drawPattern(stripW+20); // Kanan
+        drawPattern(0); drawPattern(stripW + 20);
 
         // 3. Middle Line
-        stripCtx.beginPath();
-        stripCtx.setLineDash([15, 10]);
-        stripCtx.moveTo(totalW/2, 0); stripCtx.lineTo(totalW/2, totalH);
-        stripCtx.strokeStyle = "rgba(0,0,0,0.2)"; stripCtx.lineWidth = 2; stripCtx.stroke();
-        stripCtx.setLineDash([]);
+        ctx.beginPath(); ctx.setLineDash([15, 15]);
+        ctx.moveTo(totalW/2, 0); ctx.lineTo(totalW/2, totalH);
+        ctx.strokeStyle = "#ccc"; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
 
-        // 4. Render Photos
+        // 4. Render Photos & Deco
         let loaded = 0;
         photos.forEach((src, idx) => {
             const img = new Image(); img.src = src;
@@ -309,67 +353,86 @@
                 
                 const drawPhoto = (offX) => {
                     // Shadow
-                    stripCtx.fillStyle = "rgba(0,0,0,0.1)";
-                    stripCtx.fillRect(offX+pad+6, y+6, photoW, photoH);
+                    ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(offX+pad+8, y+8, photoW, photoH);
+                    // Frame
+                    ctx.fillStyle = "#fff"; ctx.fillRect(offX+pad-10, y-10, photoW+20, photoH+20);
+                    // Image
+                    ctx.drawImage(img, offX+pad, y, photoW, photoH);
                     
-                    // Frame (Warna ikut Style)
-                    stripCtx.fillStyle = s.frameColor;
-                    stripCtx.fillRect(offX+pad-10, y-10, photoW+20, photoH+20);
-                    
-                    // Photo
-                    stripCtx.drawImage(img, offX+pad, y, photoW, photoH);
-
-                    // Sticker Decoration (Corner) - Randomly appear on photos
-                    if(Math.random() > 0.4) {
-                        const sSize = 60;
-                        // Random corner: TopLeft, TopRight, BottomLeft, BottomRight
+                    // Random Corner Emoji
+                    if(Math.random() > 0.3) {
                         const corner = Math.floor(Math.random()*4);
+                        const sSize = 50;
                         let sx, sy;
-                        if(corner===0) { sx = offX+pad-20; sy = y-20; }
-                        if(corner===1) { sx = offX+pad+photoW-40; sy = y-20; }
-                        if(corner===2) { sx = offX+pad-20; sy = y+photoH-40; }
-                        if(corner===3) { sx = offX+pad+photoW-40; sy = y+photoH-40; }
-
-                        stripCtx.save();
-                        stripCtx.translate(sx+30, sy+30);
-                        stripCtx.rotate((Math.random()-0.5)*0.5);
-                        stripCtx.globalAlpha = 1.0; // Solid
-                        stripCtx.drawImage(stickerImg, -sSize/2, -sSize/2, sSize, sSize);
-                        stripCtx.restore();
+                        if(corner===0) { sx = offX+pad-15; sy = y-15; }
+                        if(corner===1) { sx = offX+pad+photoW-35; sy = y-15; }
+                        if(corner===2) { sx = offX+pad-15; sy = y+photoH-35; }
+                        if(corner===3) { sx = offX+pad+photoW-35; sy = y+photoH-35; }
+                        
+                        ctx.font = `${sSize}px Arial`; ctx.shadowColor="rgba(0,0,0,0.2)"; ctx.shadowBlur=5;
+                        ctx.fillText(m.emoji, sx, sy+sSize/2); ctx.shadowBlur=0;
                     }
                 };
-
-                drawPhoto(0);
-                drawPhoto(stripW+20);
-
+                drawPhoto(0); drawPhoto(stripW + 20);
+                
                 loaded++;
-                if(loaded === MAX_PHOTOS) finalizeRender(stripW, stripH, footerH);
+                if(loaded === MAX_PHOTOS) finalizeCanvas(stripW, stripH, footerH, m);
             };
         });
     }
 
-    function finalizeRender(stripW, stripH, footerH) {
-        // Render Footer Logo
-        const logoW = 180;
+    function finalizeCanvas(stripW, stripH, footerH, m) {
+        const ctx = document.getElementById('render-canvas').getContext('2d');
+        const logoW = 200;
         const logoH = logoW * (logoImg.height / logoImg.width);
-        const ly = stripH - footerH + 30;
+        const yBase = stripH - footerH;
 
-        stripCtx.globalAlpha = 1.0;
-        // Kiri
-        stripCtx.drawImage(logoImg, (stripW-logoW)/2, ly, logoW, logoH);
-        // Kanan
-        stripCtx.drawImage(logoImg, (stripW+20)+(stripW-logoW)/2, ly, logoW, logoH);
+        const drawFooter = (offX) => {
+            // Signature
+            ctx.font = "bold 24px 'Fredoka One', sans-serif"; ctx.fillStyle = m.color;
+            ctx.textAlign = "center"; ctx.fillText(`With ${m.name} ${m.emoji}`, offX + stripW/2, yBase + 50);
+            
+            // Logo
+            ctx.drawImage(logoImg, offX + (stripW - logoW)/2, yBase + 70, logoW, logoH);
+            
+            // Date
+            const date = new Date().toLocaleDateString();
+            ctx.font = "14px Quicksand"; ctx.fillStyle = "#888";
+            ctx.fillText(date, offX + stripW/2, yBase + 70 + logoH + 20);
+        };
 
-        // Display
-        $('#final-image').attr('src', stripCanvas.toDataURL());
+        drawFooter(0); drawFooter(stripW + 20);
+        $('#final-img').attr('src', document.getElementById('render-canvas').toDataURL());
     }
 
+    /* --- ACTIONS --- */
     function downloadImage() {
         const a = document.createElement('a');
-        a.download = `H2H-Kiyowo-${Date.now()}.png`;
-        a.href = stripCanvas.toDataURL();
+        a.download = `H2H-${currentMember.name}-${Date.now()}.png`;
+        a.href = document.getElementById('render-canvas').toDataURL();
         a.click();
     }
+
+    function printImage() {
+        const imgData = document.getElementById('render-canvas').toDataURL();
+        const win = window.open('');
+        win.document.write(`
+            <html>
+                <head><title>Print Photo - H2H</title></head>
+                <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#eee;">
+                    <img src="${imgData}" style="max-height:95vh; max-width:95%; box-shadow:0 0 20px rgba(0,0,0,0.1);">
+                    <script>
+                        window.onload = function() { 
+                            setTimeout(function(){ window.print(); window.close(); }, 500);
+                        }
+                    <\/script>
+                </body>
+            </html>
+        `);
+    }
+
+    // Start App
+    init();
 </script>
 </body>
 </html>

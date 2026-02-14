@@ -12,7 +12,7 @@
 
 <style>
 :root{
-    --main:#7FB3D5; /* Default (Bisa berubah) */
+    --main:#7FB3D5; /* Default */
     --p2-color: #FFB7B2;
     --text:#555;
     --bg-overlay: rgba(255,255,255,0.92);
@@ -36,44 +36,59 @@ canvas{ width:100vw; height:100vh; object-fit:cover; display:block; }
 
 /* UI BOX */
 .start-ui{
-    display:flex; flex-direction:column; gap:15px; align-items:center;
+    display:flex; flex-direction:column; gap:12px; align-items:center;
     max-width:500px; width:95%; padding:25px;
     background: #fff; border-radius: 35px; border: 4px solid var(--main);
     box-shadow: 0 15px 40px rgba(0,0,0,0.1); transition: 0.3s;
+    position: relative;
 }
 
 .label{ font-weight:bold; letter-spacing:1px; color:#888; font-size:14px; text-transform: uppercase; }
 
-/* MEMBER GRID (NEW) */
+/* MEMBER GRID */
 .member-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-    width: 100%; margin-bottom: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    width: 100%; margin-bottom: 5px;
 }
 .member-item {
     display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; padding: 8px; border-radius: 15px;
+    cursor: pointer; padding: 6px; border-radius: 15px;
     border: 2px solid transparent; transition: 0.2s; background: #f9f9f9;
 }
 .member-item:hover { transform: translateY(-3px); background: #eee; }
 .member-item.selected { border-color: var(--main); background: #fff5f5; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-.mem-emoji { font-size: 28px; line-height: 1; margin-bottom: 5px; }
-.mem-name { font-size: 11px; font-weight: bold; color: #555; }
+.mem-emoji { font-size: 24px; line-height: 1; margin-bottom: 3px; }
+.mem-name { font-size: 10px; font-weight: bold; color: #555; }
 
 /* INPUTS */
 input[type="number"]{
-    width:100px; font-size:32px; text-align:center; border:2px solid var(--main);
+    width:90px; font-size:28px; text-align:center; border:2px solid var(--main);
     border-radius:14px; padding:5px; font-family:'Fredoka One'; color:var(--main); outline:none;
 }
 select{
     width:100%; padding:10px; border:2px solid #eee; border-radius:12px; outline:none;
 }
 .btn{
-    width:100%; padding:15px; font-size:24px; font-family:'Fredoka One'; border-radius:20px;
+    width:100%; padding:14px; font-size:20px; font-family:'Fredoka One'; border-radius:20px;
     border:none; background:var(--main); color:#fff; cursor:pointer;
     box-shadow: 0 5px 0 rgba(0,0,0,0.1); transition: 0.2s;
 }
 .btn:hover{ transform: translateY(-2px); filter:brightness(1.1); }
-.btn-photo { background: #FFB7B2; font-size: 18px; padding: 12px; margin-top: 5px; }
+.btn-photo { background: #FFB7B2; }
+
+/* SAWERIA BUTTON */
+.btn-saweria {
+    background: #faae2b; color: #543b1f; font-size: 16px; padding: 10px; margin-top: 5px;
+}
+
+/* FOOTER CREDIT */
+.footer-credit {
+    position: absolute; bottom: 20px; width: 100%; text-align: center;
+    font-family: 'Quicksand', sans-serif; font-size: 14px; font-weight: bold;
+    color: #888; pointer-events: auto; z-index: 101;
+}
+.footer-credit a { color: var(--main); text-decoration: none; transition: 0.2s; }
+.footer-credit a:hover { text-decoration: underline; color: var(--p2-color); }
 
 /* HUD & COUNTDOWN */
 .hud{ position:absolute; top:20px; width:100%; display:flex; justify-content:space-around; pointer-events:none; z-index:20; opacity:0; transition: 0.5s; }
@@ -91,11 +106,10 @@ select{
 <div id="start-menu" class="overlay">
     <div id="logo-pattern"></div>
     <div class="start-ui">
-        <img src="assets/logo panjang.png" style="width:70%; margin-bottom: 5px;">
+        <img src="assets/logo panjang.png" style="width:60%; margin-bottom: 5px;">
         
         <div class="label">Choose Your Bias</div>
-        <div class="member-grid" id="member-container">
-            </div>
+        <div class="member-grid" id="member-container"></div>
 
         <div style="display:flex; gap:10px; width:100%; align-items:center; justify-content:center;">
             <div>
@@ -112,6 +126,14 @@ select{
         <a href="photobox.html" style="text-decoration:none; width:100%;">
             <button class="btn btn-photo">📸 PHOTOBOX</button>
         </a>
+        
+        <a href="https://saweria.co/eloooyhm" target="_blank" style="text-decoration:none; width:100%;">
+            <button class="btn btn-saweria">🍕 Traktir Developer</button>
+        </a>
+    </div>
+
+    <div class="footer-credit">
+        Made with 💖 by <a href="https://instagram.com/eloooyhm" target="_blank">@eloooyhm</a>
     </div>
 </div>
 
@@ -121,6 +143,9 @@ select{
         <h1 id="winner-name" style="font-family:'Fredoka One'; font-size: 40px; color: var(--main); margin: 10px 0;">PLAYER 1</h1>
         <div style="font-size: 60px;">🏆</div>
         <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+        <a href="https://saweria.co/eloooyhm" target="_blank" style="text-decoration:none; width:100%;">
+            <button class="btn btn-saweria">🍕 Traktir Jajan</button>
+        </a>
     </div>
 </div>
 
@@ -142,21 +167,20 @@ select{
 <video id="input_video" style="display:none"></video>
 
 <script>
-/* ================= DATA MEMBER H2H ================= */
+/* DATA MEMBER */
 const members = [
     { id: 'jiwoo', name: 'Jiwoo', emoji: '🍓', color: '#ff5c8a' },
     { id: 'carmen', name: 'Carmen', emoji: '🌴', color: '#4caf50' },
     { id: 'yuha', name: 'Yuha', emoji: '🎀', color: '#ff9ebb' },
-    { id: 'stella', name: 'Stella', emoji: '🧁', color: '#00d2ff' }, // Pake biru terang biar kontras
+    { id: 'stella', name: 'Stella', emoji: '🧁', color: '#00d2ff' },
     { id: 'juun', name: 'Juun', emoji: '👾', color: '#9c27b0' },
     { id: 'ian', name: 'Ian', emoji: '🫛', color: '#8bc34a' },
     { id: 'ana', name: 'A-Na', emoji: '🌻', color: '#ffc107' },
     { id: 'yeon', name: 'Ye-on', emoji: '😊', color: '#ff9800' }
 ];
 
-let selectedMember = members[0]; // Default Jiwoo
+let selectedMember = members[0]; 
 
-/* ================= INIT UI ================= */
 function initMemberGrid() {
     const container = document.getElementById('member-container');
     members.forEach((m, index) => {
@@ -170,16 +194,12 @@ function initMemberGrid() {
 
 function selectMember(member, element) {
     selectedMember = member;
-    // Update Visual Selection
     document.querySelectorAll('.member-item').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
-    
-    // Update Theme Color
     document.documentElement.style.setProperty('--main', member.color);
 }
 initMemberGrid();
 
-// Pattern BG
 const patternSrc = 'assets/fav.png';
 const customLoveImg = new Image(); customLoveImg.src = patternSrc;
 
@@ -196,7 +216,7 @@ function createLogoPattern(){
 }
 createLogoPattern();
 
-/* ================= GAME VARS ================= */
+/* GAME LOGIC */
 const sfxSlice = new Audio('assets/slice.mp3'); 
 const sfxStart = new Audio('assets/game-start.mp3'); 
 const sfxOver = new Audio('assets/game-over.mp3');
@@ -207,7 +227,6 @@ let trailHistory={p1:[],p2:[]};
 let smoothPos={p1:{x:0,y:0,active:false},p2:{x:0,y:0,active:false}};
 let lastLoveTrigger=0, lastTwoHandTrigger=0;
 
-/* ================= SETUP ================= */
 function init(){
     canvasElement = document.getElementById('output_canvas');
     canvasCtx = canvasElement.getContext('2d');
@@ -225,7 +244,7 @@ function createTarget(side) {
     const minX = side===0?0.05:0.55; const maxX = side===0?0.45:0.95;
     return {
         baseX:Math.random()*(maxX-minX)+minX, baseY:Math.random()*0.6+0.2, side:side,
-        r:35, color:side===0?selectedMember.color:'#FFB7B2', // P1 ikut warna member
+        r:35, color:side===0?selectedMember.color:'#FFB7B2',
         phase:Math.random()*10, speed:0.02+Math.random()*0.03, active:true
     };
 }
@@ -235,14 +254,12 @@ function startGame(){
     $('#display-goal').text(winScore);
     scores={p1:0,p2:0}; $('#p1-score').text(0); $('#p2-score').text(0);
     targets=[]; particles=[]; loveParticles=[];
-    
     $('#start-menu').fadeOut(400); $('.hud').css('opacity','1');
     camera = new Camera(document.getElementById('input_video'), {
         onFrame: async()=>{if(isRunning)await hands.send({image:input_video});},
         width:1280, height:720, deviceId:$('#cam_select').val()
     });
     camera.start(); isRunning=true; sfxStart.play();
-    
     let count=3; $('#countdown-ui').show().text(count);
     const t=setInterval(()=>{
         count--; if(count>0)$('#countdown-ui').text(count);
@@ -254,14 +271,12 @@ function startGame(){
     },1000);
 }
 
-// --- PARTIKEL CINTA & EMOJI ---
 function spawnLove(x, y, amount=4, sizeBase=30) {
     const now=Date.now(); if(now-lastLoveTrigger<150)return; lastLoveTrigger=now;
     for(let i=0;i<amount;i++){
         loveParticles.push({
             x:x, y:y, vx:(Math.random()-0.5)*5, vy:-Math.random()*5-3, life:1.0,
             size:Math.random()*sizeBase+sizeBase, rotation:(Math.random()-0.5)*0.5,
-            // 50% Kemungkinan muncul Emoji Member, 50% Logo H2H
             type: Math.random() > 0.5 ? 'emoji' : 'logo'
         });
     }
@@ -275,13 +290,11 @@ function drawHeartShape(ctx,x,y,size,color){
     ctx.strokeStyle="white"; ctx.lineWidth=3; ctx.stroke(); ctx.restore();
 }
 
-/* ================= RENDER LOOP ================= */
 function onResults(results){
     canvasElement.width=innerWidth; canvasElement.height=innerHeight;
     canvasCtx.clearRect(0,0,innerWidth,innerHeight);
     canvasCtx.drawImage(results.image,0,0,innerWidth,innerHeight);
 
-    // Update Particles
     for(let i=particles.length-1;i>=0;i--){
         let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.04;
         if(p.life<=0)particles.splice(i,1);
@@ -291,7 +304,6 @@ function onResults(results){
         }
     }
     
-    // Update Love/Emoji
     canvasCtx.globalAlpha=1.0;
     for(let i=loveParticles.length-1;i>=0;i--){
         let p=loveParticles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.02;
@@ -299,25 +311,17 @@ function onResults(results){
         else{
             canvasCtx.save(); canvasCtx.translate(p.x,p.y);
             canvasCtx.rotate(p.rotation); canvasCtx.globalAlpha=p.life;
-            
-            if(p.type === 'logo') {
-                canvasCtx.drawImage(customLoveImg,-p.size/2,-p.size/2,p.size,p.size);
-            } else {
-                // Render Emoji Bias
-                canvasCtx.font = `${p.size}px Arial`;
-                canvasCtx.textAlign = "center";
-                canvasCtx.textBaseline = "middle";
-                canvasCtx.fillText(selectedMember.emoji, 0, 0);
+            if(p.type === 'logo') canvasCtx.drawImage(customLoveImg,-p.size/2,-p.size/2,p.size,p.size);
+            else {
+                canvasCtx.font = `${p.size}px Arial`; canvasCtx.textAlign = "center";
+                canvasCtx.textBaseline = "middle"; canvasCtx.fillText(selectedMember.emoji, 0, 0);
             }
             canvasCtx.restore();
         }
     }
     canvasCtx.globalAlpha=1.0;
 
-    // Hand Logic
     let detectedP1=false, detectedP2=false;
-    
-    // Two Hand
     if(results.multiHandLandmarks && results.multiHandLandmarks.length===2){
         const h1=results.multiHandLandmarks[0], h2=results.multiHandLandmarks[1];
         if(Math.hypot(h1[8].x-h2[8].x, h1[8].y-h2[8].y)<0.1 && Math.hypot(h1[4].x-h2[4].x, h1[4].y-h2[4].y)<0.15){
@@ -331,16 +335,10 @@ function onResults(results){
     if(results.multiHandLandmarks){
         results.multiHandLandmarks.forEach(lm=>{
             const isP1=lm[9].x<0.5; const pKey=isP1?'p1':'p2';
-            // Warna Trail P1 mengikuti Member, P2 default Pink
             const themeColor=isP1?selectedMember.color:'#FFB7B2';
             if(isP1)detectedP1=true; else detectedP2=true;
-            
             const rawX=lm[8].x*innerWidth, rawY=lm[8].y*innerHeight;
-            
-            // Finger Heart
-            if(Math.hypot(lm[4].x-lm[8].x, lm[4].y-lm[8].y)<0.05){
-                spawnLove((lm[4].x+lm[8].x)/2*innerWidth, (lm[4].y+lm[8].y)/2*innerHeight);
-            }
+            if(Math.hypot(lm[4].x-lm[8].x, lm[4].y-lm[8].y)<0.05) spawnLove((lm[4].x+lm[8].x)/2*innerWidth, (lm[4].y+lm[8].y)/2*innerHeight);
 
             if(!smoothPos[pKey].active){smoothPos[pKey].x=rawX;smoothPos[pKey].y=rawY;smoothPos[pKey].active=true;}
             else{smoothPos[pKey].x+=(rawX-smoothPos[pKey].x)*0.3; smoothPos[pKey].y+=(rawY-smoothPos[pKey].y)*0.3;}

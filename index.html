@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Hearts2Hearts</title>
+<link rel="icon" type="image/png" href="assets/fav.png">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+    --main:#7FB3D5; /* Warna Utama */
+    --p2-color: #FFB7B2; /* Warna Player 2 (Pink Pastel) */
+    --text:#333;
+}
+
+*{box-sizing:border-box;}
+
+body,html{
+    margin:0; padding:0; width:100%; height:100%;
+    font-family:'Quicksand',sans-serif;
+    overflow:hidden; color:var(--text); background:#fff;
+}
+
+/* ---------- OVERLAY GRID & UI ---------- */
+
+.overlay{
+    position:fixed; inset:0; display:flex;
+    justify-content:center; align-items:center;
+    flex-direction:column; text-align:center; z-index:100;
+    background:
+        linear-gradient(#e9f3f9 1px, transparent 1px),
+        linear-gradient(90deg,#e9f3f9 1px,transparent 1px);
+    background-size:40px 40px;
+    background-color: rgba(255,255,255,0.9); /* Sedikit transparan */
+}
+
+/* ---------- LOGO PATTERN LAYER ---------- */
+#logo-pattern{ position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.25; }
+.logo-item{ position:absolute; opacity:.6; }
+
+/* ---------- CANVAS ---------- */
+canvas{ width:100vw; height:100vh; object-fit:cover; display:block; }
+
+/* ---------- START & GAME OVER UI ---------- */
+.start-ui{
+    display:flex; flex-direction:column; gap:18px;
+    align-items:center; max-width:420px; width:100%; padding:20px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 30px;
+    border: 3px solid #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.label{ font-weight:bold; letter-spacing:1px; color:#666; font-size:clamp(14px,2.5vw,18px); }
+
+input[type="number"]{
+    width:120px; font-size:clamp(28px,7vw,40px); text-align:center;
+    border:2px solid var(--main); border-radius:14px; background:#fff;
+    padding:8px; font-family:'Fredoka One'; color:var(--main); outline:none;
+}
+
+select{
+    width:100%; padding:12px; font-size:16px;
+    border:2px solid var(--main); border-radius:12px; background:#fff;
+    outline:none; cursor: pointer;
+}
+
+.btn{
+    width:100%; padding:16px; font-size:clamp(20px,5vw,28px);
+    font-family:'Fredoka One'; border-radius:20px;
+    border:none; background:var(--main); color:#fff;
+    cursor:pointer; transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 5px 0 #5A92B3;
+}
+.btn:hover{ transform: translateY(-2px); filter:brightness(1.05); box-shadow: 0 7px 0 #5A92B3; }
+.btn:active{ transform: translateY(2px); box-shadow: 0 2px 0 #5A92B3; }
+
+/* ---------- HUD ---------- */
+.hud{
+    position:absolute; top:20px; width:100%;
+    display:flex; justify-content:space-around;
+    pointer-events:none; z-index:20; opacity:0; transition: 0.5s;
+}
+
+.score-box{
+    padding:10px 30px; border-radius:20px;
+    background:rgba(255,255,255,0.9);
+    border:3px solid var(--main);
+    text-align:center; font-family:'Fredoka One'; color:var(--main);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    min-width: 100px;
+}
+.p2-box { border-color: var(--p2-color); color: var(--p2-color); }
+
+/* ---------- COUNTDOWN ---------- */
+#countdown-ui{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Fredoka One'; font-size:clamp(80px,20vw,180px);
+    z-index:200; display:none; color:var(--main);
+    text-shadow: 4px 4px 0 #fff, 0 0 20px rgba(0,0,0,0.1);
+}
+
+/* Hidden elements */
+#game-over { display: none; }
+</style>
+</head>
+
+<body>
+
+<canvas id="output_canvas"></canvas>
+<div id="countdown-ui">3</div>
+
+<div id="start-menu" class="overlay">
+    <div id="logo-pattern"></div>
+    <div class="start-ui">
+        <img src="assets/logo panjang.png" style="width:80%;max-width:320px; margin-bottom: 10px;">
+        
+        <div class="label">SET TARGET SCORE</div>
+        <input type="number" id="goal-input" value="10" min="1" max="99">
+        
+        <select id="cam_select">
+            <option disabled selected>Select Camera</option>
+        </select>
+        
+        <button class="btn" onclick="startGame()">PLAY</button>
+    </div>
+</div>
+
+<div id="game-over" class="overlay">
+    <div class="start-ui">
+        <div class="label" style="font-size: 24px;">WINNER</div>
+        <h1 id="winner-name" style="font-family:'Fredoka One'; font-size: 40px; color: var(--main); margin: 10px 0;">PLAYER 1</h1>
+        <div style="font-size: 60px;">🏆</div>
+        <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+</div>
+
+<div class="hud">
+    <div class="score-box">
+        <div style="font-size:12px; opacity:0.7;">PLAYER 1 (LEFT)</div>
+        <div id="p1-score" style="font-size:32px;">0</div>
+    </div>
+
+    <div style="background:white; padding:5px 15px; border-radius:15px; height:fit-content; margin-top:10px; border: 2px solid #eee;">
+        <span style="font-size:10px; font-weight:bold; color:#aaa;">GOAL:</span>
+        <span id="display-goal" style="font-weight:bold; color:#555;">10</span>
+    </div>
+
+    <div class="score-box p2-box">
+        <div style="font-size:12px; opacity:0.7;">PLAYER 2 (RIGHT)</div>
+        <div id="p2-score" style="font-size:32px;">0</div>
+    </div>
+</div>
+
+<video id="input_video" style="display:none"></video>
+
+<script>
+/* ================= CONFIG & ASSETS ================= */
+const patternSrc = 'assets/fav.png'; // Logo kecil untuk partikel & pattern
+const customLoveImg = new Image(); 
+customLoveImg.src = patternSrc;
+
+// Audio (Pastikan file ada)
+const sfxSlice = new Audio('assets/slice.mp3'); sfxSlice.volume = 0.4;
+const sfxStart = new Audio('assets/game-start.mp3'); sfxStart.volume = 0.5;
+const sfxOver = new Audio('assets/game-over.mp3'); sfxOver.volume = 0.5;
+function playSfx(audio) { audio.cloneNode().play().catch(e => {}); }
+
+// Variables
+let scores = { p1: 0, p2: 0 }, winScore = 10;
+let isRunning = false, gameActive = false;
+let hands, camera, canvasCtx, canvasElement;
+let targets = [], particles = [], loveParticles = [];
+let trailHistory = { p1: [], p2: [] };
+let smoothPos = { p1: { x: 0, y: 0, active: false }, p2: { x: 0, y: 0, active: false } };
+let lastLoveTrigger = 0, lastTwoHandTrigger = 0;
+
+/* ================= UI PATTERN LOGIC ================= */
+function createLogoPattern(){
+    const container = document.getElementById('logo-pattern');
+    for(let i=0; i<35; i++){ // Jumlah pattern
+        let size = Math.random()*60+20;
+        let top = Math.random()*100;
+        let left = Math.random()*100;
+        let rotate = Math.random()*360;
+
+        let img = document.createElement('img');
+        img.src = patternSrc;
+        img.className = 'logo-item';
+        img.style.top = top+'%';
+        img.style.left = left+'%';
+        img.style.width = size+'px';
+        img.style.transform = `translate(-50%,-50%) rotate(${rotate}deg)`;
+        container.appendChild(img);
+    }
+}
+createLogoPattern();
+
+/* ================= GAME LOGIC ================= */
+
+function init(){
+    canvasElement = document.getElementById('output_canvas');
+    canvasCtx = canvasElement.getContext('2d');
+
+    // Setup MediaPipe Hands
+    hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+    hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+    hands.onResults(onResults);
+
+    // Get Cameras
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+        devices.filter(d => d.kind === 'videoinput').forEach(d => {
+            $('#cam_select').append(`<option value="${d.deviceId}">${d.label || 'Camera'}</option>`);
+        });
+    });
+}
+
+function createTarget(side) {
+    // Logic: 0 = Kiri (P1), 1 = Kanan (P2)
+    // Karena Non-Mirror, Kiri Layar (x 0-0.5) adalah tangan Kanan User (tapi kita anggap P1)
+    const minX = side === 0 ? 0.05 : 0.55;
+    const maxX = side === 0 ? 0.45 : 0.95;
+    return {
+        baseX: Math.random() * (maxX - minX) + minX,
+        baseY: Math.random() * 0.6 + 0.2, // Area vertikal tengah
+        side: side,
+        r: 35, // Radius target
+        color: side === 0 ? '#7FB3D5' : '#FFB7B2',
+        phase: Math.random() * 10,
+        speed: 0.02 + Math.random() * 0.03,
+        active: true
+    };
+}
+
+function startGame(){
+    const goalVal = parseInt($('#goal-input').val());
+    winScore = (goalVal && goalVal > 0) ? goalVal : 10;
+    $('#display-goal').text(winScore);
+
+    // Reset State
+    scores = {p1:0, p2:0};
+    $('#p1-score').text(0);
+    $('#p2-score').text(0);
+    targets = []; particles = []; loveParticles = [];
+
+    // UI Transition
+    $('#start-menu').fadeOut(400);
+    $('.hud').css('opacity','1');
+
+    // Start Camera
+    const camId = $('#cam_select').val();
+    camera = new Camera(document.getElementById('input_video'), {
+        onFrame: async () => { if(isRunning) await hands.send({image: input_video}); },
+        width: 1280, height: 720, deviceId: camId
+    });
+
+    camera.start();
+    isRunning = true;
+    playSfx(sfxStart);
+
+    // Countdown
+    let count = 3;
+    const cdUi = $('#countdown-ui');
+    cdUi.show().text(count);
+
+    const timer = setInterval(() => {
+        count--;
+        if(count > 0) cdUi.text(count);
+        else if (count === 0) cdUi.text("GO!");
+        else {
+            clearInterval(timer);
+            cdUi.fadeOut(200);
+            // Spawn initial targets
+            for(let i=0; i<winScore + 4; i++) { 
+                targets.push(createTarget(0)); 
+                targets.push(createTarget(1)); 
+            }
+            gameActive = true;
+        }
+    }, 1000);
+}
+
+function spawnLove(x, y, amount=4, sizeBase=30) {
+    const now = Date.now();
+    if(now - lastLoveTrigger < 150) return; // Cooldown
+    lastLoveTrigger = now;
+
+    for(let i=0; i<amount; i++){
+        loveParticles.push({
+            x: x, y: y,
+            vx: (Math.random()-0.5) * 5,
+            vy: -Math.random() * 5 - 3,
+            life: 1.0,
+            size: Math.random() * sizeBase + sizeBase,
+            rotation: (Math.random()-0.5) * 0.5
+        });
+    }
+}
+
+function drawHeartShape(ctx, x, y, size, color) {
+    ctx.save(); ctx.translate(x, y); ctx.beginPath();
+    ctx.moveTo(0, -size/2); ctx.bezierCurveTo(size/2, -size, size, -size/3, 0, size); 
+    ctx.bezierCurveTo(-size, -size/3, -size/2, -size, 0, -size/2); 
+    ctx.fillStyle = color; ctx.shadowBlur = 15; ctx.shadowColor = color; ctx.fill();
+    ctx.strokeStyle = "white"; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+}
+
+/* ================= MAIN RENDER LOOP ================= */
+
+function onResults(results){
+    canvasElement.width = window.innerWidth;
+    canvasElement.height = window.innerHeight;
+    canvasCtx.clearRect(0,0, canvasElement.width, canvasElement.height);
+
+    // 1. Draw Video (NON-MIRRORED)
+    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    // 2. Update Particles
+    // -- Explosions
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+        if (p.life <= 0) particles.splice(i, 1);
+        else {
+            canvasCtx.globalAlpha = p.life; canvasCtx.fillStyle = p.color;
+            canvasCtx.beginPath(); canvasCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); canvasCtx.fill();
+        }
+    }
+    canvasCtx.globalAlpha = 1.0;
+
+    // -- Love Icons (fav.png)
+    for (let i = loveParticles.length - 1; i >= 0; i--) {
+        let p = loveParticles[i];
+        p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+        if (p.life <= 0) loveParticles.splice(i, 1);
+        else {
+            canvasCtx.save(); canvasCtx.translate(p.x, p.y);
+            canvasCtx.rotate(p.rotation); canvasCtx.globalAlpha = p.life;
+            // Gambar fav.png
+            canvasCtx.drawImage(customLoveImg, -p.size/2, -p.size/2, p.size, p.size);
+            canvasCtx.restore();
+        }
+    }
+    canvasCtx.globalAlpha = 1.0;
+
+    // 3. Hand Processing
+    let detectedP1 = false, detectedP2 = false;
+
+    // -- Two Hand Gesture Detection --
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length === 2) {
+        const h1 = results.multiHandLandmarks[0];
+        const h2 = results.multiHandLandmarks[1];
+        // Jarak Telunjuk ke Telunjuk & Jempol ke Jempol
+        const distIdx = Math.hypot(h1[8].x - h2[8].x, h1[8].y - h2[8].y);
+        const distThb = Math.hypot(h1[4].x - h2[4].x, h1[4].y - h2[4].y);
+        
+        if (distIdx < 0.1 && distThb < 0.15) {
+            const now = Date.now();
+            if (now - lastTwoHandTrigger > 800) { // Cooldown lama
+                lastTwoHandTrigger = now;
+                const midX = ((h1[8].x + h2[8].x) / 2) * canvasElement.width;
+                const midY = ((h1[4].y + h2[4].y) / 2) * canvasElement.height;
+                spawnLove(midX, midY, 15, 60); // Spawn BANYAK & BESAR
+            }
+        }
+    }
+
+    if (results.multiHandLandmarks) {
+        results.multiHandLandmarks.forEach((landmarks) => {
+            // Logic Sisi: < 0.5 Kiri (P1), > 0.5 Kanan (P2)
+            const palmX = landmarks[9].x; 
+            const isP1 = palmX < 0.5;
+            const pKey = isP1 ? 'p1' : 'p2';
+            const themeColor = isP1 ? '#7FB3D5' : '#FFB7B2';
+            
+            if(isP1) detectedP1 = true; else detectedP2 = true;
+
+            const rawX = landmarks[8].x * canvasElement.width;
+            const rawY = landmarks[8].y * canvasElement.height;
+
+            // -- Gesture: Finger Heart (1 Tangan) --
+            const distThumbIndex = Math.hypot(landmarks[4].x - landmarks[8].x, landmarks[4].y - landmarks[8].y);
+            if(distThumbIndex < 0.05) {
+                const midX = (landmarks[4].x + landmarks[8].x)/2 * canvasElement.width;
+                const midY = (landmarks[4].y + landmarks[8].y)/2 * canvasElement.height;
+                spawnLove(midX, midY);
+            }
+
+            // -- Smoothing Movement --
+            if (!smoothPos[pKey].active) { 
+                smoothPos[pKey].x = rawX; smoothPos[pKey].y = rawY; smoothPos[pKey].active = true; 
+            } else { 
+                smoothPos[pKey].x += (rawX - smoothPos[pKey].x) * 0.3; 
+                smoothPos[pKey].y += (rawY - smoothPos[pKey].y) * 0.3; 
+            }
+            const fx = smoothPos[pKey].x; 
+            const fy = smoothPos[pKey].y;
+
+            // -- Draw Trails --
+            trailHistory[pKey].push({x: fx, y: fy});
+            if(trailHistory[pKey].length > 15) trailHistory[pKey].shift();
+
+            if(trailHistory[pKey].length > 2) {
+                canvasCtx.beginPath(); canvasCtx.lineWidth = 12; 
+                canvasCtx.lineCap = 'round'; canvasCtx.lineJoin = 'round';
+                canvasCtx.strokeStyle = themeColor;
+                canvasCtx.shadowColor = "white"; canvasCtx.shadowBlur = 10;
+                canvasCtx.moveTo(trailHistory[pKey][0].x, trailHistory[pKey][0].y);
+                for(let i=1; i<trailHistory[pKey].length; i++){
+                    const xc = (trailHistory[pKey][i].x + trailHistory[pKey][i-1].x)/2;
+                    const yc = (trailHistory[pKey][i].y + trailHistory[pKey][i-1].y)/2;
+                    canvasCtx.quadraticCurveTo(trailHistory[pKey][i-1].x, trailHistory[pKey][i-1].y, xc, yc);
+                }
+                canvasCtx.lineTo(fx, fy); canvasCtx.stroke(); canvasCtx.shadowBlur = 0;
+            }
+
+            // -- Draw Cursor --
+            canvasCtx.beginPath(); canvasCtx.arc(fx, fy, 10, 0, Math.PI*2);
+            canvasCtx.fillStyle = "#fff"; canvasCtx.fill();
+            canvasCtx.lineWidth = 3; canvasCtx.strokeStyle = themeColor; canvasCtx.stroke();
+
+            // -- Collision Detection (Game Active) --
+            if(gameActive) {
+                targets.forEach(t => {
+                    if (!t.active) return;
+                    // Gerakkan target
+                    const tx = (t.baseX + Math.sin(t.phase)*0.1) * canvasElement.width;
+                    const ty = (t.baseY + Math.cos(t.phase)*0.1) * canvasElement.height;
+                    
+                    // Hit Check
+                    if (Math.hypot(fx - tx, fy - ty) < t.r + 30) {
+                        // Cek apakah tangan yang benar menyentuh target yang benar
+                        if ((t.side === 0 && isP1) || (t.side === 1 && !isP1)) {
+                            // Hit!
+                            for(let k=0; k<8; k++) { // Explosion particles
+                                particles.push({
+                                    x: tx, y: ty, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                                    life: 1, color: t.color, size: Math.random()*5+3
+                                });
+                            }
+                            playSfx(sfxSlice);
+                            t.active = false;
+                            
+                            // Update Score
+                            if (t.side === 0) { scores.p1++; $('#p1-score').text(scores.p1); } 
+                            else { scores.p2++; $('#p2-score').text(scores.p2); }
+                            
+                            checkWin();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    if(!detectedP1) { smoothPos.p1.active = false; trailHistory.p1 = []; }
+    if(!detectedP2) { smoothPos.p2.active = false; trailHistory.p2 = []; }
+
+    // 4. Draw Targets
+    if(gameActive) {
+        targets.forEach(t => {
+            if (!t.active) return;
+            t.phase += t.speed;
+            const tx = (t.baseX + Math.sin(t.phase)*0.1) * canvasElement.width;
+            const ty = (t.baseY + Math.cos(t.phase)*0.1) * canvasElement.height;
+            drawHeartShape(canvasCtx, tx, ty, t.r, t.color);
+        });
+    }
+}
+
+function checkWin() {
+    if ((scores.p1 >= winScore || scores.p2 >= winScore) && gameActive) {
+        gameActive = false;
+        playSfx(sfxOver);
+        
+        const winnerName = scores.p1 >= winScore ? "PLAYER 1" : "PLAYER 2";
+        const winnerColor = scores.p1 >= winScore ? "var(--main)" : "var(--p2-color)";
+        
+        $('#winner-name').text(winnerName).css('color', winnerColor);
+        $('#game-over').css('display', 'flex').hide().fadeIn(500);
+    }
+}
+
+init();
+</script>
+
+</body>
+</html>
